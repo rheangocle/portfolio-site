@@ -14,20 +14,19 @@
   const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement | null;
   const ctx = canvas?.getContext("2d") ?? null;
 
+  // Cancel any loop left running by a previous script execution (e.g. dev HMR),
+  // so animation frames can never stack up and speed the motion up.
+  const w = window as unknown as { __heroRaf?: number };
+  if (w.__heroRaf) cancelAnimationFrame(w.__heroRaf);
+
   if (canvas && ctx) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const parent = canvas.parentElement as HTMLElement;
     const ACCENT = "109, 91, 208"; // matches --color-accent (#6d5bd0)
     const PROJECTS = ["BellyEase", "ClothingCue", "Helm", "WFSU", "Guidepoint", "Down Unda"];
+    const SPEED = 7; // px per second — deliberately gentle
 
-    type Node = {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      r: number;
-      label?: string;
-    };
+    type Node = { x: number; y: number; vx: number; vy: number; r: number; label?: string };
 
     let W = 0;
     let H = 0;
@@ -57,12 +56,11 @@
 
       const labels = mobile ? PROJECTS.slice(0, 4) : PROJECTS;
       const fillers = mobile ? 3 : 6;
-      const speed = 0.14;
       const make = (label?: string): Node => ({
         x: rand(region.x0, region.x1),
         y: rand(region.y0, region.y1),
-        vx: rand(-speed, speed),
-        vy: rand(-speed, speed),
+        vx: rand(-SPEED, SPEED),
+        vy: rand(-SPEED, SPEED),
         r: label ? 3 : 1.6,
         label,
       });
@@ -114,10 +112,10 @@
       ctx!.restore();
     }
 
-    function step() {
+    function step(dt: number) {
       for (const n of nodes) {
-        n.x += n.vx;
-        n.y += n.vy;
+        n.x += n.vx * dt;
+        n.y += n.vy * dt;
         if (n.x < region.x0 || n.x > region.x1) n.vx *= -1;
         if (n.y < region.y0 || n.y > region.y1) n.vy *= -1;
       }
@@ -136,28 +134,45 @@
         tpy = (e.clientY / window.innerHeight - 0.5) * 18;
       });
 
-      let running = true;
-      function loop() {
-        if (!running) return;
-        step();
+      let running = false;
+      let last = 0;
+
+      function frame(t: number) {
+        if (!running) {
+          w.__heroRaf = undefined;
+          return;
+        }
+        // Time-based movement so speed is identical on any refresh rate.
+        const dt = last ? Math.min((t - last) / 1000, 0.05) : 0;
+        last = t;
+        step(dt);
         draw();
-        requestAnimationFrame(loop);
+        w.__heroRaf = requestAnimationFrame(frame);
       }
+
+      function start() {
+        if (running) return; // never stack a second loop
+        running = true;
+        last = 0;
+        w.__heroRaf = requestAnimationFrame(frame);
+      }
+      function stop() {
+        running = false;
+      }
+
       const io = new IntersectionObserver(
         ([entry]) => {
-          const wasRunning = running;
-          running = entry.isIntersecting && !document.hidden;
-          if (running && !wasRunning) loop();
+          if (entry.isIntersecting && !document.hidden) start();
+          else stop();
         },
         { threshold: 0 }
       );
       io.observe(canvas);
       document.addEventListener("visibilitychange", () => {
-        const wasRunning = running;
-        running = !document.hidden;
-        if (running && !wasRunning) loop();
+        if (document.hidden) stop();
+        else start();
       });
-      loop();
+      start();
     }
   }
 </script>
