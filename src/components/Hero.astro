@@ -1,0 +1,58 @@
+---
+import { site } from "../data/site";
+import HeroCanvas from "./HeroCanvas.astro";
+---
+
+<section
+  id="top"
+  class="relative isolate mx-auto flex min-h-screen max-w-5xl flex-col justify-center overflow-hidden px-6 pt-24 pb-16"
+>
+  <HeroCanvas />
+
+  <!-- ambient accent glow -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute -top-24 left-1/4 -z-10 h-72 w-72 rounded-full bg-[var(--color-accent)] opacity-[0.12] blur-[120px]"
+  >
+  </div>
+
+  <div class="relative z-10 w-full">
+    <p class="mb-5 font-mono text-sm tracking-wide text-[var(--color-accent)]">
+      Hi, I'm {site.name} 👋
+    </p>
+
+    <h1
+      class="font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-[var(--color-ink)] sm:text-6xl lg:text-7xl"
+    >
+      {site.role}
+    </h1>
+
+    <p class="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--color-muted)]">
+      {site.tagline}
+    </p>
+
+    <div class="mt-9 flex flex-wrap items-center gap-4">
+      <a
+        href="#work"
+        class="rounded-full bg-[var(--color-accent)] px-6 py-3 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5"
+      >
+        View my work
+      </a>
+      <a
+        href="#contact"
+        class="rounded-full border border-[var(--color-border)] bg-[var(--color-bg)]/60 px-6 py-3 text-sm font-semibold text-[var(--color-ink)] backdrop-blur-sm transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+      >
+        Get in touch
+      </a>
+    </div>
+
+    <div class="mt-12 flex items-center gap-6 text-sm text-[var(--color-muted)]">
+      <span class="inline-flex items-center gap-2">
+        <span class="h-2 w-2 rounded-full bg-green-500"></span>
+        Open to senior full-stack &amp; web developer roles
+      </span>
+      <span class="hidden sm:inline">·</span>
+      <span class="hidden sm:inline">{site.location}</span>
+    </div>
+  </div>
+</section>

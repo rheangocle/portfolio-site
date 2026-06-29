@@ -1,0 +1,59 @@
+---
+import { site } from "../data/site";
+
+const stats = [
+  { value: "4+", label: "Years building for the web" },
+  { value: "1000s", label: "Pages migrated & maintained" },
+  { value: "50.8%", label: "Newsletter growth at WFSU" },
+];
+---
+
+<section id="about" class="border-y border-[var(--color-border)] bg-[var(--color-surface)]/40">
+  <div class="mx-auto grid max-w-5xl gap-12 px-6 py-24 md:grid-cols-5">
+    <div class="reveal md:col-span-3">
+      <p class="font-mono text-sm text-[var(--color-accent)]">02 · About</p>
+      <h2
+        class="mt-2 font-display text-3xl font-bold tracking-tight text-[var(--color-ink)] sm:text-4xl"
+      >
+        From the lab bench to the codebase
+      </h2>
+
+      <div class="mt-6 space-y-4 text-[var(--color-muted)]">
+        <p>
+          I'm a senior full-stack web developer based in {site.location}. I work
+          across the whole stack: PHP, Laravel, and WordPress at enterprise scale
+          on one side; React, Vue, Astro, and TypeScript on the other. I'm just
+          as comfortable owning deployments, databases, and infrastructure as I
+          am building features.
+        </p>
+        <p>
+          My path here was unusual: I earned a biochemistry degree from Kenyon
+          College and worked in research before teaching myself to code. That
+          background gave me a methodical, evidence-driven way of working that I
+          bring to debugging, refactoring, and shipping reliable software.
+        </p>
+        <p>
+          Today I lead large CMS rebuilds, ship AI-integrated products, and
+          maintain production systems for agencies, public media, and my own
+          apps. Since 2021 I've also taken on freelance projects for small
+          businesses, handling everything from build to SEO to ongoing support. I
+          care about clean, accessible, well-tested code and about the people who
+          have to use and maintain it after me.
+        </p>
+      </div>
+    </div>
+
+    <div class="reveal flex flex-col justify-center gap-6 md:col-span-2">
+      {
+        stats.map((s) => (
+          <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+            <div class="font-display text-3xl font-extrabold text-[var(--color-accent)]">
+              {s.value}
+            </div>
+            <div class="mt-1 text-sm text-[var(--color-muted)]">{s.label}</div>
+          </div>
+        ))
+      }
+    </div>
+  </div>
+</section>

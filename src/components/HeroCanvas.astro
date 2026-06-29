@@ -1,0 +1,103 @@
+---
+// Subtle decorative WebGL motion behind the hero. Purely cosmetic and
+// aria-hidden; disabled entirely for users who prefer reduced motion.
+---
+
+<canvas
+  id="hero-canvas"
+  aria-hidden="true"
+  class="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-80"
+></canvas>
+
+<script>
+  import * as THREE from "three";
+
+  const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement | null;
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (canvas && !reduce) {
+    const parent = canvas.parentElement as HTMLElement;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    camera.position.z = 5;
+
+    // Evenly distribute points on a sphere (Fibonacci sphere).
+    const COUNT = 700;
+    const radius = 2.3;
+    const positions = new Float32Array(COUNT * 3);
+    const golden = Math.PI * (3 - Math.sqrt(5));
+    for (let i = 0; i < COUNT; i++) {
+      const y = 1 - (i / (COUNT - 1)) * 2;
+      const r = Math.sqrt(1 - y * y);
+      const theta = golden * i;
+      positions[i * 3] = Math.cos(theta) * r * radius;
+      positions[i * 3 + 1] = y * radius;
+      positions[i * 3 + 2] = Math.sin(theta) * r * radius;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+    const material = new THREE.PointsMaterial({
+      color: 0x6d5bd0,
+      size: 0.045,
+      sizeAttenuation: true,
+      transparent: true,
+      opacity: 0.85,
+    });
+
+    const points = new THREE.Points(geometry, material);
+    // Offset to the right so it sits beside the hero text, not under it.
+    const group = new THREE.Group();
+    group.add(points);
+    group.position.x = 1.6;
+    scene.add(group);
+
+    function resize() {
+      const w = parent.clientWidth;
+      const h = parent.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      // Tuck the sphere further right on wide screens, center it on narrow ones.
+      group.position.x = w < 768 ? 0 : 1.6;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Gentle pointer parallax.
+    let targetX = 0;
+    let targetY = 0;
+    window.addEventListener("pointermove", (e) => {
+      targetX = (e.clientX / window.innerWidth - 0.5) * 0.4;
+      targetY = (e.clientY / window.innerHeight - 0.5) * 0.4;
+    });
+
+    let running = true;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        running = entry.isIntersecting;
+        if (running) loop();
+      },
+      { threshold: 0 }
+    );
+    io.observe(canvas);
+    document.addEventListener("visibilitychange", () => {
+      running = !document.hidden;
+      if (running) loop();
+    });
+
+    function loop() {
+      if (!running) return;
+      group.rotation.y += 0.0016;
+      group.rotation.x += (targetY - group.rotation.x) * 0.03;
+      group.rotation.z += (targetX - group.rotation.z) * 0.03;
+      renderer.render(scene, camera);
+      requestAnimationFrame(loop);
+    }
+    loop();
+  }
+</script>

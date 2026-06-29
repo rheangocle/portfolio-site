@@ -1,0 +1,51 @@
+---
+import { site } from "../data/site";
+
+const links = [
+  { href: "#work", label: "Work" },
+  { href: "#about", label: "About" },
+  { href: "#skills", label: "Skills" },
+  { href: "#contact", label: "Contact" },
+];
+---
+
+<header
+  class="fixed top-0 z-50 w-full border-b border-[var(--color-border)]/60 bg-[var(--color-bg)]/80 backdrop-blur"
+>
+  <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+    <a
+      href="#top"
+      class="font-display text-lg font-bold tracking-tight text-[var(--color-ink)]"
+    >
+      Rhea<span class="text-[var(--color-accent)]">.</span>Le
+    </a>
+
+    <div class="hidden items-center gap-8 sm:flex">
+      {
+        links.map((l) => (
+          <a
+            href={l.href}
+            class="text-sm text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            {l.label}
+          </a>
+        ))
+      }
+      <a
+        href={site.links.resume}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-full border border-[var(--color-accent)] px-4 py-1.5 text-sm font-medium text-[var(--color-accent)] transition-colors hover:bg-[var(--color-accent)] hover:text-white"
+      >
+        Résumé
+      </a>
+    </div>
+
+    <a
+      href="#contact"
+      class="rounded-full border border-[var(--color-accent)] px-4 py-1.5 text-sm font-medium text-[var(--color-accent)] sm:hidden"
+    >
+      Contact
+    </a>
+  </nav>
+</header>

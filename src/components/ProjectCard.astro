@@ -1,0 +1,128 @@
+---
+import type { Project } from "../data/site";
+
+interface Props {
+  project: Project;
+}
+const { project } = Astro.props;
+const { title, context, blurb, highlights, stack, liveUrl, repoUrl, liveLabel, image, imageFit, extraUrl, extraLabel, clients } = project;
+const fitClass = imageFit === "contain" ? "object-contain p-3" : "object-cover";
+---
+
+<article
+  class="reveal group flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] transition-colors hover:border-[var(--color-accent)]/50"
+>
+  <!-- Visual: screenshot if provided, otherwise a styled placeholder -->
+  <div
+    class="relative aspect-[16/9] w-full overflow-hidden border-b border-[var(--color-border)] bg-[var(--color-surface-2)]"
+  >
+    {
+      image ? (
+        <img
+          src={image}
+          alt={`${title} screenshot`}
+          class:list={[
+            "h-full w-full transition-transform duration-500 group-hover:scale-[1.03]",
+            fitClass,
+          ]}
+          loading="lazy"
+        />
+      ) : (
+        <div class="flex h-full w-full items-center justify-center">
+          <span class="font-display text-2xl font-bold tracking-tight text-[var(--color-border)]">
+            {title}
+          </span>
+          <span class="absolute bottom-3 right-4 font-mono text-[10px] uppercase tracking-widest text-[var(--color-muted)]/60">
+            screenshot coming soon
+          </span>
+        </div>
+      )
+    }
+  </div>
+
+  <div class="flex flex-1 flex-col p-6">
+    <p class="font-mono text-xs tracking-wide text-[var(--color-accent)]">{context}</p>
+    <h3 class="mt-2 font-display text-xl font-bold text-[var(--color-ink)]">{title}</h3>
+    <p class="mt-3 text-sm leading-relaxed text-[var(--color-muted)]">{blurb}</p>
+
+    <ul class="mt-4 space-y-2">
+      {
+        highlights.map((h) => (
+          <li class="flex gap-2.5 text-sm leading-snug text-[var(--color-ink)]/90">
+            <span class="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--color-accent)]" />
+            {h}
+          </li>
+        ))
+      }
+    </ul>
+
+    <div class="mt-5 flex flex-wrap gap-2">
+      {
+        stack.map((s) => (
+          <span class="rounded-full bg-[var(--color-surface-2)] px-2.5 py-1 text-xs text-[var(--color-muted)]">
+            {s}
+          </span>
+        ))
+      }
+    </div>
+
+    {
+      clients && clients.length > 0 && (
+        <div class="mt-5">
+          <p class="font-mono text-xs uppercase tracking-wider text-[var(--color-muted)]">
+            Selected clients
+          </p>
+          <div class="mt-2 flex flex-wrap gap-2">
+            {clients.map((c) => (
+              <a
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+              >
+                {c.name} ↗
+              </a>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    {
+      (liveUrl || repoUrl || extraUrl) && (
+        <div class="mt-6 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--color-border)] pt-4">
+          {liveUrl && (
+            <a
+              href={liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm font-medium text-[var(--color-accent)] hover:underline"
+            >
+              {liveLabel ?? "Live site"} ↗
+            </a>
+          )}
+          {extraUrl && (
+            <a
+              href={extraUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+            >
+              {extraLabel ?? "More"} ↗
+            </a>
+          )}
+          {repoUrl && (
+            <a
+              href={repoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-sm font-medium text-[var(--color-muted)] hover:text-[var(--color-ink)]"
+            >
+              Code ↗
+            </a>
+          )}
+        </div>
+      )
+    }
+  </div>
+</article>

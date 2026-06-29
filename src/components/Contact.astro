@@ -1,0 +1,51 @@
+---
+import { site } from "../data/site";
+---
+
+<section id="contact" class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/40">
+  <div class="mx-auto max-w-3xl px-6 py-28 text-center">
+    <p class="reveal font-mono text-sm text-[var(--color-accent)]">04 · Contact</p>
+    <h2
+      class="reveal mt-2 font-display text-4xl font-bold tracking-tight text-[var(--color-ink)] sm:text-5xl"
+    >
+      Let's build something
+    </h2>
+    <p class="reveal mx-auto mt-5 max-w-xl text-lg text-[var(--color-muted)]">
+      I'm open to senior full-stack and web developer roles, plus select
+      freelance work. The fastest way to reach me is email, and I reply within a
+      day.
+    </p>
+
+    <div class="reveal mt-9 flex flex-wrap items-center justify-center gap-4">
+      <a
+        href={site.links.email}
+        class="rounded-full bg-[var(--color-accent)] px-7 py-3 text-sm font-semibold text-[var(--color-bg)] transition-transform hover:-translate-y-0.5"
+      >
+        {site.email}
+      </a>
+      <a
+        href={site.links.resume}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="rounded-full border border-[var(--color-border)] px-7 py-3 text-sm font-semibold text-[var(--color-ink)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+      >
+        View résumé
+      </a>
+    </div>
+
+    <div class="reveal mt-10 flex items-center justify-center gap-6 text-sm">
+      <a
+        href={site.links.github}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+        >GitHub</a
+      >
+      <a
+        href={site.links.email}
+        class="text-[var(--color-muted)] transition-colors hover:text-[var(--color-ink)]"
+        >Email</a
+      >
+    </div>
+  </div>
+</section>

@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/* Design tokens: warm off-white base with a soft lavender accent. */
+@theme {
+  --color-bg: #f5f3ef;
+  --color-surface: #ffffff;
+  --color-surface-2: #efeaf7;
+  --color-border: #e3ddec;
+  --color-ink: #211d2e;
+  --color-muted: #6c6678;
+  --color-accent: #6d5bd0;
+  --color-accent-soft: #6d5bd01a;
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Sora", "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 5rem;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: #ffffff;
+}
+
+/* Subtle reveal-on-scroll, respects reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
