@@ -1,7 +1,8 @@
 ---
-// Subtle decorative hero motion: a slow-drifting constellation of project
-// nodes connected by faint lines. Purely cosmetic, aria-hidden, and disabled
-// (rendered as a single static frame) for users who prefer reduced motion.
+// Interactive hero motion: skill/tech bubbles grouped into colored clusters by
+// category. Bubbles gently bob, settle toward their group, and dodge the
+// cursor. Cosmetic + aria-hidden; renders a single static frame under
+// prefers-reduced-motion.
 ---
 
 <canvas
@@ -14,27 +15,50 @@
   const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement | null;
   const ctx = canvas?.getContext("2d") ?? null;
 
-  // Cancel any loop left running by a previous script execution (e.g. dev HMR),
-  // so animation frames can never stack up and speed the motion up.
-  const w = window as unknown as { __heroRaf?: number };
-  if (w.__heroRaf) cancelAnimationFrame(w.__heroRaf);
+  // Cancel any loop left running by a previous script execution (e.g. dev HMR).
+  const wglobal = window as unknown as { __heroRaf?: number };
+  if (wglobal.__heroRaf) cancelAnimationFrame(wglobal.__heroRaf);
 
   if (canvas && ctx) {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const parent = canvas.parentElement as HTMLElement;
-    const ACCENT = "109, 91, 208"; // matches --color-accent (#6d5bd0)
-    const PROJECTS = ["BellyEase", "ClothingCue", "Helm", "WFSU", "Guidepoint", "Down Unda"];
-    const SPEED = 7; // px per second — deliberately gentle
 
-    type Node = { x: number; y: number; vx: number; vy: number; r: number; label?: string };
+    // Analogous purple/blue palette so the clusters stay cohesive with the theme.
+    // Anchors avoid the vertical center band where the headline sits.
+    const CATS = {
+      lang: { color: "124, 92, 208", anchor: [0.3, 0.14] },
+      framework: { color: "92, 112, 210", anchor: [0.68, 0.66] },
+      cms: { color: "152, 96, 200", anchor: [0.26, 0.82] },
+      infra: { color: "80, 150, 200", anchor: [0.84, 0.82] },
+      db: { color: "182, 100, 188", anchor: [0.82, 0.12] },
+    } as const;
+
+    const SKILLS: { label: string; cat: keyof typeof CATS }[] = [
+      { label: "TypeScript", cat: "lang" },
+      { label: "Python", cat: "lang" },
+      { label: "PHP", cat: "lang" },
+      { label: "React", cat: "framework" },
+      { label: "Vue", cat: "framework" },
+      { label: "Laravel", cat: "framework" },
+      { label: "Astro", cat: "framework" },
+      { label: "WordPress", cat: "cms" },
+      { label: "Elementor", cat: "cms" },
+      { label: "Docker", cat: "infra" },
+      { label: "Linux", cat: "infra" },
+      { label: "CI/CD", cat: "infra" },
+      { label: "PostgreSQL", cat: "db" },
+      { label: "Redis", cat: "db" },
+    ];
+
+    type Bubble = {
+      x: number; y: number; vx: number; vy: number; r: number;
+      label: string; color: string; ax: number; ay: number; phase: number;
+    };
 
     let W = 0;
     let H = 0;
-    let region = { x0: 0, x1: 0, y0: 0, y1: 0 };
-    let nodes: Node[] = [];
-    let LINK = 180;
-
-    const rand = (a: number, b: number) => a + Math.random() * (b - a);
+    let bubbles: Bubble[] = [];
+    const mouse = { x: -9999, y: -9999, active: false };
 
     function build() {
       W = parent.clientWidth;
@@ -45,116 +69,136 @@
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       const mobile = W < 768;
-      // Keep the field to the right of the headline on desktop; centered on mobile.
-      region = {
-        x0: mobile ? W * 0.08 : W * 0.5,
-        x1: mobile ? W * 0.92 : W * 0.95,
-        y0: H * 0.16,
-        y1: H * 0.9,
+      const region = {
+        x0: mobile ? W * 0.06 : W * 0.54,
+        x1: mobile ? W * 0.94 : W * 0.97,
+        y0: H * 0.1,
+        y1: H * 0.95,
       };
-      LINK = Math.min(W, H) * (mobile ? 0.42 : 0.3);
+      const rw = region.x1 - region.x0;
+      const rh = region.y1 - region.y0;
+      const scale = mobile ? 0.8 : 1;
 
-      const labels = mobile ? PROJECTS.slice(0, 4) : PROJECTS;
-      const fillers = mobile ? 3 : 6;
-      const make = (label?: string): Node => ({
-        x: rand(region.x0, region.x1),
-        y: rand(region.y0, region.y1),
-        vx: rand(-SPEED, SPEED),
-        vy: rand(-SPEED, SPEED),
-        r: label ? 3 : 1.6,
-        label,
+      ctx!.font = `600 ${12 * scale}px Inter, ui-sans-serif, system-ui, sans-serif`;
+      bubbles = SKILLS.map((s) => {
+        const cat = CATS[s.cat];
+        const ax = region.x0 + cat.anchor[0] * rw;
+        const ay = region.y0 + cat.anchor[1] * rh;
+        const r = Math.max(20 * scale, ctx!.measureText(s.label).width / 2 + 14 * scale);
+        return {
+          x: ax + (Math.random() - 0.5) * 40,
+          y: ay + (Math.random() - 0.5) * 40,
+          vx: 0, vy: 0, r, ax, ay,
+          label: s.label,
+          color: cat.color,
+          phase: Math.random() * Math.PI * 2,
+        };
       });
-      nodes = [...labels.map((l) => make(l)), ...Array.from({ length: fillers }, () => make())];
     }
 
-    let px = 0;
-    let py = 0;
-    let tpx = 0;
-    let tpy = 0;
-
-    function draw() {
-      ctx!.clearRect(0, 0, W, H);
-      px += (tpx - px) * 0.05;
-      py += (tpy - py) * 0.05;
-      ctx!.save();
-      ctx!.translate(px, py);
-
-      // Connecting lines (drawn first so nodes sit on top).
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
+    function physics(dt: number, t: number) {
+      const damp = Math.exp(-2.6 * dt);
+      for (const b of bubbles) {
+        // Gentle pull toward the category anchor.
+        let fx = (b.ax - b.x) * 1.4;
+        let fy = (b.ay - b.y) * 1.4;
+        // Cursor repulsion.
+        if (mouse.active) {
+          const dx = b.x - mouse.x;
+          const dy = b.y - mouse.y;
           const d = Math.hypot(dx, dy);
-          if (d < LINK) {
-            ctx!.strokeStyle = `rgba(${ACCENT}, ${(1 - d / LINK) * 0.16})`;
-            ctx!.lineWidth = 1;
-            ctx!.beginPath();
-            ctx!.moveTo(nodes[i].x, nodes[i].y);
-            ctx!.lineTo(nodes[j].x, nodes[j].y);
-            ctx!.stroke();
+          const reach = b.r + 80;
+          if (d < reach && d > 0.01) {
+            const push = ((reach - d) / reach) * 900;
+            fx += (dx / d) * push;
+            fy += (dy / d) * push;
+          }
+        }
+        b.vx = (b.vx + fx * dt) * damp;
+        b.vy = (b.vy + fy * dt) * damp;
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+      }
+      // Soft collision separation.
+      for (let i = 0; i < bubbles.length; i++) {
+        for (let j = i + 1; j < bubbles.length; j++) {
+          const a = bubbles[i];
+          const c = bubbles[j];
+          const dx = c.x - a.x;
+          const dy = c.y - a.y;
+          const d = Math.hypot(dx, dy) || 0.01;
+          const min = a.r + c.r + 6;
+          if (d < min) {
+            const o = (min - d) / 2;
+            const ux = dx / d;
+            const uy = dy / d;
+            a.x -= ux * o; a.y -= uy * o;
+            c.x += ux * o; c.y += uy * o;
           }
         }
       }
-
-      // Nodes + labels.
-      ctx!.font = "600 12px Inter, ui-sans-serif, system-ui, sans-serif";
-      ctx!.textBaseline = "middle";
-      for (const n of nodes) {
-        ctx!.fillStyle = `rgba(${ACCENT}, ${n.label ? 0.85 : 0.5})`;
-        ctx!.beginPath();
-        ctx!.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx!.fill();
-        if (n.label) {
-          ctx!.fillStyle = `rgba(${ACCENT}, 0.55)`;
-          ctx!.fillText(n.label, n.x + 9, n.y);
-        }
-      }
-      ctx!.restore();
     }
 
-    function step(dt: number) {
-      for (const n of nodes) {
-        n.x += n.vx * dt;
-        n.y += n.vy * dt;
-        if (n.x < region.x0 || n.x > region.x1) n.vx *= -1;
-        if (n.y < region.y0 || n.y > region.y1) n.vy *= -1;
+    function draw(t: number) {
+      ctx!.clearRect(0, 0, W, H);
+      ctx!.textAlign = "center";
+      ctx!.textBaseline = "middle";
+      const mobile = W < 768;
+      ctx!.font = `600 ${mobile ? 9.6 : 12}px Inter, ui-sans-serif, system-ui, sans-serif`;
+      for (const b of bubbles) {
+        const bob = Math.sin(t * 0.0009 + b.phase) * 3;
+        const y = b.y + bob;
+        ctx!.beginPath();
+        ctx!.arc(b.x, y, b.r, 0, Math.PI * 2);
+        ctx!.fillStyle = `rgba(${b.color}, 0.12)`;
+        ctx!.fill();
+        ctx!.lineWidth = 1.2;
+        ctx!.strokeStyle = `rgba(${b.color}, 0.5)`;
+        ctx!.stroke();
+        ctx!.fillStyle = "rgba(40, 34, 60, 0.92)";
+        ctx!.fillText(b.label, b.x, y);
       }
     }
 
     build();
-    draw();
+    // Settle a few steps so the first paint is already clustered, not scattered.
+    for (let i = 0; i < 60; i++) physics(1 / 60, 0);
+    draw(0);
+
     window.addEventListener("resize", () => {
       build();
-      draw();
+      for (let i = 0; i < 60; i++) physics(1 / 60, 0);
+      draw(0);
     });
 
     if (!reduce) {
       window.addEventListener("pointermove", (e) => {
-        tpx = (e.clientX / window.innerWidth - 0.5) * 18;
-        tpy = (e.clientY / window.innerHeight - 0.5) * 18;
+        const rect = canvas!.getBoundingClientRect();
+        mouse.x = e.clientX - rect.left;
+        mouse.y = e.clientY - rect.top;
+        mouse.active = mouse.x >= 0 && mouse.x <= W && mouse.y >= 0 && mouse.y <= H;
       });
+      window.addEventListener("pointerleave", () => (mouse.active = false));
+      window.addEventListener("blur", () => (mouse.active = false));
 
       let running = false;
       let last = 0;
-
       function frame(t: number) {
         if (!running) {
-          w.__heroRaf = undefined;
+          wglobal.__heroRaf = undefined;
           return;
         }
-        // Time-based movement so speed is identical on any refresh rate.
-        const dt = last ? Math.min((t - last) / 1000, 0.05) : 0;
+        const dt = last ? Math.min((t - last) / 1000, 0.05) : 1 / 60;
         last = t;
-        step(dt);
-        draw();
-        w.__heroRaf = requestAnimationFrame(frame);
+        physics(dt, t);
+        draw(t);
+        wglobal.__heroRaf = requestAnimationFrame(frame);
       }
-
       function start() {
-        if (running) return; // never stack a second loop
+        if (running) return;
         running = true;
         last = 0;
-        w.__heroRaf = requestAnimationFrame(frame);
+        wglobal.__heroRaf = requestAnimationFrame(frame);
       }
       function stop() {
         running = false;
