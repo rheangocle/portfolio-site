@@ -1,103 +1,163 @@
 ---
-// Subtle decorative WebGL motion behind the hero. Purely cosmetic and
-// aria-hidden; disabled entirely for users who prefer reduced motion.
+// Subtle decorative hero motion: a slow-drifting constellation of project
+// nodes connected by faint lines. Purely cosmetic, aria-hidden, and disabled
+// (rendered as a single static frame) for users who prefer reduced motion.
 ---
 
 <canvas
   id="hero-canvas"
   aria-hidden="true"
-  class="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-80"
+  class="pointer-events-none absolute inset-0 z-0 h-full w-full"
 ></canvas>
 
 <script>
-  import * as THREE from "three";
-
   const canvas = document.getElementById("hero-canvas") as HTMLCanvasElement | null;
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const ctx = canvas?.getContext("2d") ?? null;
 
-  if (canvas && !reduce) {
+  if (canvas && ctx) {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const parent = canvas.parentElement as HTMLElement;
+    const ACCENT = "109, 91, 208"; // matches --color-accent (#6d5bd0)
+    const PROJECTS = ["BellyEase", "ClothingCue", "Helm", "WFSU", "Guidepoint", "Down Unda"];
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    type Node = {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      r: number;
+      label?: string;
+    };
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
-    camera.position.z = 5;
+    let W = 0;
+    let H = 0;
+    let region = { x0: 0, x1: 0, y0: 0, y1: 0 };
+    let nodes: Node[] = [];
+    let LINK = 180;
 
-    // Evenly distribute points on a sphere (Fibonacci sphere).
-    const COUNT = 700;
-    const radius = 2.3;
-    const positions = new Float32Array(COUNT * 3);
-    const golden = Math.PI * (3 - Math.sqrt(5));
-    for (let i = 0; i < COUNT; i++) {
-      const y = 1 - (i / (COUNT - 1)) * 2;
-      const r = Math.sqrt(1 - y * y);
-      const theta = golden * i;
-      positions[i * 3] = Math.cos(theta) * r * radius;
-      positions[i * 3 + 1] = y * radius;
-      positions[i * 3 + 2] = Math.sin(theta) * r * radius;
+    const rand = (a: number, b: number) => a + Math.random() * (b - a);
+
+    function build() {
+      W = parent.clientWidth;
+      H = parent.clientHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas!.width = Math.round(W * dpr);
+      canvas!.height = Math.round(H * dpr);
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const mobile = W < 768;
+      // Keep the field to the right of the headline on desktop; centered on mobile.
+      region = {
+        x0: mobile ? W * 0.08 : W * 0.5,
+        x1: mobile ? W * 0.92 : W * 0.95,
+        y0: H * 0.16,
+        y1: H * 0.9,
+      };
+      LINK = Math.min(W, H) * (mobile ? 0.42 : 0.3);
+
+      const labels = mobile ? PROJECTS.slice(0, 4) : PROJECTS;
+      const fillers = mobile ? 3 : 6;
+      const speed = 0.14;
+      const make = (label?: string): Node => ({
+        x: rand(region.x0, region.x1),
+        y: rand(region.y0, region.y1),
+        vx: rand(-speed, speed),
+        vy: rand(-speed, speed),
+        r: label ? 3 : 1.6,
+        label,
+      });
+      nodes = [...labels.map((l) => make(l)), ...Array.from({ length: fillers }, () => make())];
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
 
-    const material = new THREE.PointsMaterial({
-      color: 0x6d5bd0,
-      size: 0.045,
-      sizeAttenuation: true,
-      transparent: true,
-      opacity: 0.85,
+    let px = 0;
+    let py = 0;
+    let tpx = 0;
+    let tpy = 0;
+
+    function draw() {
+      ctx!.clearRect(0, 0, W, H);
+      px += (tpx - px) * 0.05;
+      py += (tpy - py) * 0.05;
+      ctx!.save();
+      ctx!.translate(px, py);
+
+      // Connecting lines (drawn first so nodes sit on top).
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const d = Math.hypot(dx, dy);
+          if (d < LINK) {
+            ctx!.strokeStyle = `rgba(${ACCENT}, ${(1 - d / LINK) * 0.16})`;
+            ctx!.lineWidth = 1;
+            ctx!.beginPath();
+            ctx!.moveTo(nodes[i].x, nodes[i].y);
+            ctx!.lineTo(nodes[j].x, nodes[j].y);
+            ctx!.stroke();
+          }
+        }
+      }
+
+      // Nodes + labels.
+      ctx!.font = "600 12px Inter, ui-sans-serif, system-ui, sans-serif";
+      ctx!.textBaseline = "middle";
+      for (const n of nodes) {
+        ctx!.fillStyle = `rgba(${ACCENT}, ${n.label ? 0.85 : 0.5})`;
+        ctx!.beginPath();
+        ctx!.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx!.fill();
+        if (n.label) {
+          ctx!.fillStyle = `rgba(${ACCENT}, 0.55)`;
+          ctx!.fillText(n.label, n.x + 9, n.y);
+        }
+      }
+      ctx!.restore();
+    }
+
+    function step() {
+      for (const n of nodes) {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < region.x0 || n.x > region.x1) n.vx *= -1;
+        if (n.y < region.y0 || n.y > region.y1) n.vy *= -1;
+      }
+    }
+
+    build();
+    draw();
+    window.addEventListener("resize", () => {
+      build();
+      draw();
     });
 
-    const points = new THREE.Points(geometry, material);
-    // Offset to the right so it sits beside the hero text, not under it.
-    const group = new THREE.Group();
-    group.add(points);
-    group.position.x = 1.6;
-    scene.add(group);
+    if (!reduce) {
+      window.addEventListener("pointermove", (e) => {
+        tpx = (e.clientX / window.innerWidth - 0.5) * 18;
+        tpy = (e.clientY / window.innerHeight - 0.5) * 18;
+      });
 
-    function resize() {
-      const w = parent.clientWidth;
-      const h = parent.clientHeight;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      // Tuck the sphere further right on wide screens, center it on narrow ones.
-      group.position.x = w < 768 ? 0 : 1.6;
-      camera.updateProjectionMatrix();
+      let running = true;
+      function loop() {
+        if (!running) return;
+        step();
+        draw();
+        requestAnimationFrame(loop);
+      }
+      const io = new IntersectionObserver(
+        ([entry]) => {
+          const wasRunning = running;
+          running = entry.isIntersecting && !document.hidden;
+          if (running && !wasRunning) loop();
+        },
+        { threshold: 0 }
+      );
+      io.observe(canvas);
+      document.addEventListener("visibilitychange", () => {
+        const wasRunning = running;
+        running = !document.hidden;
+        if (running && !wasRunning) loop();
+      });
+      loop();
     }
-    resize();
-    window.addEventListener("resize", resize);
-
-    // Gentle pointer parallax.
-    let targetX = 0;
-    let targetY = 0;
-    window.addEventListener("pointermove", (e) => {
-      targetX = (e.clientX / window.innerWidth - 0.5) * 0.4;
-      targetY = (e.clientY / window.innerHeight - 0.5) * 0.4;
-    });
-
-    let running = true;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        running = entry.isIntersecting;
-        if (running) loop();
-      },
-      { threshold: 0 }
-    );
-    io.observe(canvas);
-    document.addEventListener("visibilitychange", () => {
-      running = !document.hidden;
-      if (running) loop();
-    });
-
-    function loop() {
-      if (!running) return;
-      group.rotation.y += 0.0016;
-      group.rotation.x += (targetY - group.rotation.x) * 0.03;
-      group.rotation.z += (targetX - group.rotation.z) * 0.03;
-      renderer.render(scene, camera);
-      requestAnimationFrame(loop);
-    }
-    loop();
   }
 </script>
