@@ -8,7 +8,7 @@
 <canvas
   id="hero-canvas"
   aria-hidden="true"
-  class="pointer-events-none absolute inset-0 z-0 h-full w-full"
+  class="pointer-events-none absolute inset-0 z-0 hidden h-full w-full md:block"
 ></canvas>
 
 <script>
@@ -60,31 +60,36 @@
     let bubbles: Bubble[] = [];
     const mouse = { x: -9999, y: -9999, active: false };
 
+    // The canvas is hidden under md; clientWidth is 0 when not displayed.
+    const visible = () => canvas!.clientWidth > 0;
+
     function build() {
-      W = parent.clientWidth;
-      H = parent.clientHeight;
+      W = canvas!.clientWidth;
+      H = canvas!.clientHeight;
+      if (!W || !H) {
+        nodes = [];
+        return;
+      }
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas!.width = Math.round(W * dpr);
       canvas!.height = Math.round(H * dpr);
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const mobile = W < 768;
       const region = {
-        x0: mobile ? W * 0.06 : W * 0.54,
-        x1: mobile ? W * 0.94 : W * 0.97,
+        x0: W * 0.54,
+        x1: W * 0.97,
         y0: H * 0.1,
         y1: H * 0.95,
       };
       const rw = region.x1 - region.x0;
       const rh = region.y1 - region.y0;
-      const scale = mobile ? 0.8 : 1;
 
-      ctx!.font = `600 ${12 * scale}px Inter, ui-sans-serif, system-ui, sans-serif`;
+      ctx!.font = "600 12px Inter, ui-sans-serif, system-ui, sans-serif";
       bubbles = SKILLS.map((s) => {
         const cat = CATS[s.cat];
         const ax = region.x0 + cat.anchor[0] * rw;
         const ay = region.y0 + cat.anchor[1] * rh;
-        const r = Math.max(20 * scale, ctx!.measureText(s.label).width / 2 + 14 * scale);
+        const r = Math.max(20, ctx!.measureText(s.label).width / 2 + 14);
         return {
           x: ax + (Math.random() - 0.5) * 40,
           y: ay + (Math.random() - 0.5) * 40,
@@ -143,8 +148,7 @@
       ctx!.clearRect(0, 0, W, H);
       ctx!.textAlign = "center";
       ctx!.textBaseline = "middle";
-      const mobile = W < 768;
-      ctx!.font = `600 ${mobile ? 9.6 : 12}px Inter, ui-sans-serif, system-ui, sans-serif`;
+      ctx!.font = "600 12px Inter, ui-sans-serif, system-ui, sans-serif";
       for (const b of bubbles) {
         const bob = Math.sin(t * 0.0009 + b.phase) * 3;
         const y = b.y + bob;
@@ -160,16 +164,15 @@
       }
     }
 
-    build();
-    // Settle a few steps so the first paint is already clustered, not scattered.
-    for (let i = 0; i < 60; i++) physics(1 / 60, 0);
-    draw(0);
-
-    window.addEventListener("resize", () => {
+    function rebuild() {
       build();
+      if (!visible()) return;
+      // Settle a few steps so the first paint is already clustered, not scattered.
       for (let i = 0; i < 60; i++) physics(1 / 60, 0);
       draw(0);
-    });
+    }
+    rebuild();
+    window.addEventListener("resize", rebuild);
 
     if (!reduce) {
       window.addEventListener("pointermove", (e) => {
@@ -195,7 +198,7 @@
         wglobal.__heroRaf = requestAnimationFrame(frame);
       }
       function start() {
-        if (running) return;
+        if (running || !visible()) return; // never run while hidden (mobile)
         running = true;
         last = 0;
         wglobal.__heroRaf = requestAnimationFrame(frame);
@@ -203,6 +206,12 @@
       function stop() {
         running = false;
       }
+
+      // Start/stop as the canvas crosses the md breakpoint on resize.
+      window.addEventListener("resize", () => {
+        if (visible()) start();
+        else stop();
+      });
 
       const io = new IntersectionObserver(
         ([entry]) => {

@@ -12,7 +12,7 @@ const links = [
 <header
   class="fixed top-0 z-50 w-full border-b border-[var(--color-border)]/60 bg-[var(--color-bg)]/80 backdrop-blur"
 >
-  <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+  <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4" aria-label="Primary">
     <a
       href="#top"
       class="font-display text-lg font-bold tracking-tight text-[var(--color-ink)]"
@@ -20,6 +20,7 @@ const links = [
       Rhea<span class="text-[var(--color-accent)]">.</span>Le
     </a>
 
+    <!-- Desktop nav -->
     <div class="hidden items-center gap-8 sm:flex">
       {
         links.map((l) => (
@@ -41,11 +42,56 @@ const links = [
       </a>
     </div>
 
-    <a
-      href="#contact"
-      class="rounded-full border border-[var(--color-accent)] px-4 py-1.5 text-sm font-medium text-[var(--color-accent)] sm:hidden"
-    >
-      Contact
-    </a>
+    <!-- Mobile nav: accessible disclosure menu -->
+    <details id="mobile-menu" class="relative sm:hidden">
+      <summary
+        class="flex h-10 w-10 cursor-pointer list-none items-center justify-center rounded-lg border border-[var(--color-border)] text-[var(--color-ink)] [&::-webkit-details-marker]:hidden"
+        aria-label="Open menu"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <line x1="4" y1="7" x2="20" y2="7"></line>
+          <line x1="4" y1="12" x2="20" y2="12"></line>
+          <line x1="4" y1="17" x2="20" y2="17"></line>
+        </svg>
+      </summary>
+      <div
+        class="absolute right-0 mt-2 flex w-44 flex-col gap-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-2 shadow-lg shadow-black/5"
+      >
+        {
+          links.map((l) => (
+            <a
+              href={l.href}
+              class="rounded-lg px-3 py-2 text-sm text-[var(--color-ink)] transition-colors hover:bg-[var(--color-surface-2)]"
+            >
+              {l.label}
+            </a>
+          ))
+        }
+        <a
+          href={site.links.resume}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="mt-1 rounded-lg bg-[var(--color-accent)] px-3 py-2 text-center text-sm font-medium text-white"
+        >
+          Résumé
+        </a>
+      </div>
+    </details>
   </nav>
 </header>
+
+<script>
+  // Close the mobile menu after choosing a link or tapping outside it.
+  const menu = document.getElementById("mobile-menu") as HTMLDetailsElement | null;
+  if (menu) {
+    menu.querySelectorAll("a").forEach((a) =>
+      a.addEventListener("click", () => (menu.open = false))
+    );
+    document.addEventListener("click", (e) => {
+      if (menu.open && !menu.contains(e.target as Node)) menu.open = false;
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") menu.open = false;
+    });
+  }
+</script>
