@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
-/* Design tokens: warm off-white base with a soft lavender accent. */
+/* Design tokens: warm peach-cream base, lavender + peach accents. */
 @theme {
-  --color-bg: #f5f3ef;
+  --color-bg: #fbf4ee;
   --color-surface: #ffffff;
-  --color-surface-2: #efeaf7;
-  --color-border: #e3ddec;
-  --color-ink: #211d2e;
-  --color-muted: #6c6678;
-  --color-accent: #6d5bd0;
-  --color-accent-soft: #6d5bd01a;
+  --color-surface-2: #f3edf7;
+  --color-border: #ebe1ea;
+  --color-ink: #292333;
+  --color-muted: #6f6678;
+  --color-accent: #7b67cf; /* lavender */
+  --color-accent-soft: #7b67cf1a;
+  --color-peach: #ef9e72; /* peach */
+  --color-peach-soft: #ef9e721f;
 
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: "Sora", "Inter", ui-sans-serif, system-ui, sans-serif;

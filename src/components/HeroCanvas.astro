@@ -23,14 +23,14 @@
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const parent = canvas.parentElement as HTMLElement;
 
-    // Analogous purple/blue palette so the clusters stay cohesive with the theme.
+    // Peach-to-lavender palette: clusters span the two theme accents.
     // Anchors avoid the vertical center band where the headline sits.
     const CATS = {
-      lang: { color: "124, 92, 208", anchor: [0.3, 0.14] },
-      framework: { color: "92, 112, 210", anchor: [0.68, 0.66] },
-      cms: { color: "152, 96, 200", anchor: [0.26, 0.82] },
-      infra: { color: "80, 150, 200", anchor: [0.84, 0.82] },
-      db: { color: "182, 100, 188", anchor: [0.82, 0.12] },
+      lang: { color: "123, 103, 207", anchor: [0.3, 0.14] }, // lavender
+      framework: { color: "159, 118, 196", anchor: [0.68, 0.66] }, // lavender-mauve
+      cms: { color: "197, 130, 175", anchor: [0.26, 0.82] }, // mauve
+      infra: { color: "239, 158, 114", anchor: [0.84, 0.82] }, // peach
+      db: { color: "230, 146, 142", anchor: [0.82, 0.12] }, // rose-peach
     } as const;
 
     const SKILLS: { label: string; cat: keyof typeof CATS }[] = [
